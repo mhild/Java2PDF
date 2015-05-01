@@ -1,0 +1,7 @@
+setup.py
+Java2PDF.egg-info/PKG-INFO
+Java2PDF.egg-info/SOURCES.txt
+Java2PDF.egg-info/dependency_links.txt
+Java2PDF.egg-info/not-zip-safe
+Java2PDF.egg-info/requires.txt
+Java2PDF.egg-info/top_level.txt
