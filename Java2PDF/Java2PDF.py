@@ -9,34 +9,72 @@ import argparse
 import os
 import pdfkit
 from PyPDF2 import PdfFileReader, PdfFileMerger
-
+import re
 
 def trim_java(lines):
     # remove trailing blanks
     text = ""
     indentcount = 0
-    for line in lines:
-        text=text+line.strip()
+    inside_comment = False
+    inside_arg = False
     
+    for line in lines:
+        if '(' in line:
+            inside_arg = True
+
+        if inside_arg:
+            res = re.match(r'(\([\s\S]+\))', line)
+            if res:
+                arg = res.group(1)
+                new_arg = arg.replace(";","##SKINARG##");
+            
+                line = line.replace(arg,new_arg);
+        
+        if ')' in line:
+            inside_arg = False
+                
+        text=text+line.strip()
+        
+        if "//" in line:
+            text=text+"##COMMENT##"
+            
+        if "/*" in line:
+            inside_comment = True
+            
+        if inside_comment:
+            text=text+"##COMMENT##"
+        
+        if "*/" in line:
+            inside_comment = False    
+    
+
+            
+   
     # remove newlines
     text = text.replace("\n", "")
     text = text.replace("\r", "")
     
-    # insert newlines after ';'
+    text = text.replace("public", "\npublic")
+    text = text.replace("private", "\nprivate")
+    
+    # insert newlines after ';' & comments
     text = text.replace(";", ";\n")
     
+    # replace placeholders
+    text = text.replace("##COMMENT##", "\n")
+    text = text.replace("##SKINARG##", ";")
     # insert indents 
     out = ""
     indent = ""
     for char in text:
         if char =='{':
             indentcount = indentcount + 1
-            indent = indent + ""
-            out = out + char + "\n"
+            indent = indent + " "
+            out = out + char + "\n" + indent
         elif char == '}':
             indentcount = indentcount - 1
             indent = indent[:-1]
-            out = out + indent + char + "\n"
+            out = out + char + "\n" + indent
         elif char == "\n":
             out = out + char + indent
         else:
