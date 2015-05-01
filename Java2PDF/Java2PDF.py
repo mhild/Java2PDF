@@ -10,6 +10,7 @@ import os
 import pdfkit
 from PyPDF2 import PdfFileReader, PdfFileMerger
 import re
+import textwrap
 
 def trim_java(lines):
     # remove trailing blanks
@@ -28,21 +29,35 @@ def trim_java(lines):
                 arg = res.group(1)
                 new_arg = arg.replace(";","##SKINARG##");
             
-                line = line.replace(arg,new_arg);
+                lines = line.replace(arg,new_arg);
         
         if ')' in line:
             inside_arg = False
-                
-        text=text+line.strip()
         
-        if "//" in line:
-            text=text+"##COMMENT##"
+        
             
         if "/*" in line:
             inside_comment = True
             
+        if "//" in line:
+            res = re.match(r'(//[\s\S]+)', line.strip())
+            if res:
+                arg = res.group(1)
+                wrappedlines = textwrap.wrap(arg, width)
+                new_arg = ''.join( "//" + l + "##COMMENT##" for l in wrappedlines)
+                line = line.strip().replace(arg,new_arg);
+                line = line.replace("////", "//")
+            else:
+                wrappedlines = textwrap.wrap(line.strip(), width)
+                line = ''.join("//" + l + "##COMMENT##" for l in wrappedlines)
+                line = line.replace("////", "//")
+                            
         if inside_comment:
-            text=text+"##COMMENT##"
+            wrappedlines = textwrap.wrap(line, width)
+            line = ''.join(l + "##COMMENT##" for l in wrappedlines)
+
+            
+        text=text+line.strip()
         
         if "*/" in line:
             inside_comment = False    
@@ -91,6 +106,7 @@ options = {
 cmd_line_parser = argparse.ArgumentParser()
 cmd_line_parser.add_argument("source", help="Klausurordner: Pfad zu den Studentenordnern")
 cmd_line_parser.add_argument("-d", "--destinationfolder", help="Ziel-Ordner fuer die PDFs")
+cmd_line_parser.add_argument("-w", "--width", help="max. Zeichenbreite fuer Kommentare (default: 80 Zeichen)")
 cmd_line_parser.add_argument("-p", "--prefix", help="Prefix, dass jedem PDF vorangestellt wird")
 cmd_line_parser.add_argument("-f", "--force", action='store_true', help="Einzelne Studenten-PDFs werden neu erstellt", )
 args = cmd_line_parser.parse_args()
@@ -101,7 +117,11 @@ if args.destinationfolder:
     destination_folder =  args.destinationfolder
 else:
     destination_folder = source_folder.strip("/")
-    
+if args.width:
+    width = int(args.width)
+else:
+    width=80
+
 if args.prefix:
     prefix = args.prefix
 else:
