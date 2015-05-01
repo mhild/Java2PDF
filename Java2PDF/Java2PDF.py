@@ -51,10 +51,10 @@ options = {
     }
 
 cmd_line_parser = argparse.ArgumentParser()
-cmd_line_parser.add_argument("source", help="Klausurordner: Pfsd zu den Studentenordnern")
+cmd_line_parser.add_argument("source", help="Klausurordner: Pfad zu den Studentenordnern")
 cmd_line_parser.add_argument("-d", "--destinationfolder", help="Ziel-Ordner fuer die PDFs")
 cmd_line_parser.add_argument("-p", "--prefix", help="Prefix, dass jedem PDF vorangestellt wird")
-cmd_line_parser.add_argument("-f", "--force", help="Einzelne Studenten-PDFs werden neu erstellt")
+cmd_line_parser.add_argument("-f", "--force", action='store_true', help="Einzelne Studenten-PDFs werden neu erstellt", )
 args = cmd_line_parser.parse_args()
 
 source_folder = args.source.strip("/")
