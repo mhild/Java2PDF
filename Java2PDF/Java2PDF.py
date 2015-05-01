@@ -98,10 +98,8 @@ for folder in student_folders:
             for jf in fnmatch.filter(i[2], "*.java"):
     
                 html=html+"<h4>"+i[0]+"/"+jf+"</h4><p><pre style='font-size: 10px; font-family: 'Courier New', courier; white-space: pre;'>"
-                f = open(i[0]+"/"+jf,"r")
-                lines = []
-                for line in f:
-                    lines=lines.append(line)
+                with open(i[0]+"/"+jf,"r") as f:
+                    lines = f.readlines()
                 html=html+trim_java(lines)+"</pre></p>"
     
                 f.close()
