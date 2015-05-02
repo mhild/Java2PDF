@@ -46,7 +46,6 @@ setup(name='Java2PDF',
       author='mhild',
       license='GPL',
       install_requires=[
-          'PyPDF2',
-          'pdfkit',
+                        'pdfkit',
       ],
       zip_safe=False)
