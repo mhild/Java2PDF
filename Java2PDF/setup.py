@@ -9,30 +9,34 @@ from setuptools import setup
 import subprocess
 import re
 
-print("checking wkhtmltopdf")
-ret = subprocess.call(["which","wkhtmltopdf"])
-if ret == 0:
-    # is installed
-    # check versio
-    ret = subprocess.check_output(["which","wkhtmltopdf"])
-    wkhtmltopdf = ret
-    
-    versionRaw = subprocess.check_output([ "wkhtmltopdf" ,"-V"])
-    matchObj = re.match(r'Name:[\n\r]\s+wkhtmltopdf\s([0-9\.]+)', versionRaw)
-    
-    if matchObj:
-        version = matchObj.group(1)
-        # version check
-        matchObj2 = re.match(r'([0-9]+)\.([0-9]+)\.([0-9]+)', version)
-        if matchObj2:
-            if int(matchObj2.group(1))==0 and int(matchObj2.group(2))<=9 and int(matchObj2.group(3))<=9:
-                print("correct version of wkhtmltopdf installed")
-            else:
-                print("installing wkhtmltopdf (you are prompted for the sudo-password)")
-                os.system("sudo gem install wkhtmltopdf-binary -v 0.9.9")
-else:
-    print("installing wkhtmltopdf (you are prompted for the sudo-password)")
-    os.system("sudo gem install wkhtmltopdf-binary -v 0.9.9")            
+print("checking for wkhtmltopdf")
+print("installing wkhtmltopdf (you are prompted for the sudo-password)")
+os.system("sudo gem install wkhtmltopdf-binary-edge")    
+# ret = subprocess.call(["which","wkhtmltopdf"])
+# if ret == 0:
+#     print("wkhtmltopdf  found, checking version")
+#     # is installed
+#     # check versio
+#     ret = subprocess.check_output(["which","wkhtmltopdf"])
+#     wkhtmltopdf = ret
+#     
+#     versionRaw = subprocess.check_output([ "wkhtmltopdf" ,"-V"])
+#     matchObj = re.match(r'([0-9\.]+\.){3}', versionRaw)
+#     
+#     if matchObj:
+#         version = matchObj.group(1)
+#         print("wkhtmltopdf version found: "+version)
+#         # version check
+#         matchObj2 = re.match(r'([0-9]+)\.([0-9]+)\.([0-9]+)(?:\.[0-9]+)', version)
+#         if matchObj2:
+#             if int(matchObj2.group(1))==0 and int(matchObj2.group(2))<=12 and int(matchObj2.group(3))<=2:
+#                 print("correct version of wkhtmltopdf installed")
+#             else:
+#                 print("installing wkhtmltopdf (you are prompted for the sudo-password)")
+#                 os.system("sudo gem install wkhtmltopdf-binary-edge") # -v 0.12.2.1")
+# else:
+#     print("installing wkhtmltopdf (you are prompted for the sudo-password)")
+#     os.system("sudo gem install wkhtmltopdf-binary-edge")          
 
 
 setup(name='Java2PDF',
