@@ -139,48 +139,36 @@ if not os.path.exists(source_folder):
     exit
 
 student_folders = next(os.walk(source_folder))[1]
+outfile = destination_folder+"/"+prefix+"GESAMT.pdf"
+html="<meta http-equiv='Content-Type' content='text/html; charset=utf-8' /><script src='https://cdn.rawgit.com/google/code-prettify/master/loader/run_prettify.js'></script>"
+html = html + "<head><style>.pb { page-break-before: always;word-wrap:break-word;}</style></head>"
 
 
+html = html + "<body>"
 pdf_list = []
 for folder in student_folders:
 
-    outfile = destination_folder+"/"+prefix+folder.replace(" ","_")+".pdf"
-    pdf_list.append(outfile)
-    
-    if not os.path.exists(outfile) or args.force:
         # umlaute
-        html="<meta http-equiv='Content-Type' content='text/html; charset=utf-8' /><script src='https://cdn.rawgit.com/google/code-prettify/master/loader/run_prettify.js'></script>"
     
-        print("#Student/Ordner: "+folder+" => PDF wird erstellt")
-        
-        html=html+"<h3>Student/Ordner: <b>"+folder+"</b></h3>"
-        
-        items = os.walk(source_folder+"/"+folder)
-        
-        
-    
-        for i in items:
-            for jf in fnmatch.filter(i[2], "*.java"):
-    
- #               html=html+"<h4>"+i[0]+"/"+jf+"</h4><p><pre style='font-size: 10px; font-family: 'Courier New', courier; white-space: pre;'>"
-                html=html+"<h4>"+i[0]+"/"+jf+"</h4><p><pre class='prettyprint'>"
-                with open(i[0]+"/"+jf,"r") as f:
-                    lines = f.readlines()
+    print("Parsing folder '"+folder+"'")  
+    html=html+"<div class='pb'><h3>Student/Ordner: <b>"+folder+"</b></h3>"  
+    items = os.walk(source_folder+"/"+folder)
+    for i in items:
+        for jf in fnmatch.filter(i[2], "*.java"):
+            html=html+"<h4>"+i[0]+"/"+jf+"</h4><p><pre class='prettyprint lang-java'>"
+            with open(i[0]+"/"+jf,"r") as f:
+                lines = f.readlines()
                 html=html+trim_java2(lines)+"</pre></p>"
-    
-                f.close()
+            f.close()
         
-        pdfkit.from_string(html.strip().decode('utf-8'), outfile, options=options)
-    else:
-        print("Student/Ordner: "+folder+" => skipped")
-        
-merger = PdfFileMerger()
+#        pdfkit.from_string(html.strip().decode('utf-8'), outfile, options=options)
+#    else:
+#        print("Student/Ordner: "+folder+" => skipped")
+    html = html + "</div>"
+html = html + "</body>"
 
-time.sleep(2)
+print("Building PDF: " + outfile )
+pdfkit.from_string(html.strip().decode('utf-8'), outfile, options=options)       
 
-for filename in pdf_list:
-    print("adding "+filename)
-    merger.append(PdfFileReader(filename, "rb"))
 
-merger.write(os.path.join(destination_folder, prefix+"GESAMT.pdf"))
 
