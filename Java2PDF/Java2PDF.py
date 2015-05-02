@@ -11,6 +11,11 @@ import pdfkit
 from PyPDF2 import PdfFileReader, PdfFileMerger
 import re
 import textwrap
+import time 
+
+def trim_java2(lines):
+
+    return ''.join(lines)
 
 def trim_java(lines):
     # remove trailing blanks
@@ -100,7 +105,8 @@ def trim_java(lines):
     
 
 options = {
-    'quiet': ''
+    'quiet': '',
+    'javascript-delay': '5000',
     }
 
 cmd_line_parser = argparse.ArgumentParser()
@@ -143,7 +149,7 @@ for folder in student_folders:
     
     if not os.path.exists(outfile) or args.force:
         # umlaute
-        html="<meta http-equiv='Content-Type' content='text/html; charset=utf-8' />"
+        html="<meta http-equiv='Content-Type' content='text/html; charset=utf-8' /><script src='https://cdn.rawgit.com/google/code-prettify/master/loader/run_prettify.js'></script>"
     
         print("#Student/Ordner: "+folder+" => PDF wird erstellt")
         
@@ -151,14 +157,16 @@ for folder in student_folders:
         
         items = os.walk(source_folder+"/"+folder)
         
+        
     
         for i in items:
             for jf in fnmatch.filter(i[2], "*.java"):
     
-                html=html+"<h4>"+i[0]+"/"+jf+"</h4><p><pre style='font-size: 10px; font-family: 'Courier New', courier; white-space: pre;'>"
+ #               html=html+"<h4>"+i[0]+"/"+jf+"</h4><p><pre style='font-size: 10px; font-family: 'Courier New', courier; white-space: pre;'>"
+                html=html+"<h4>"+i[0]+"/"+jf+"</h4><p><pre class='prettyprint'>"
                 with open(i[0]+"/"+jf,"r") as f:
                     lines = f.readlines()
-                html=html+trim_java(lines)+"</pre></p>"
+                html=html+trim_java2(lines)+"</pre></p>"
     
                 f.close()
         
@@ -168,11 +176,11 @@ for folder in student_folders:
         
 merger = PdfFileMerger()
 
+time.sleep(2)
+
 for filename in pdf_list:
     print("adding "+filename)
     merger.append(PdfFileReader(filename, "rb"))
 
 merger.write(os.path.join(destination_folder, prefix+"GESAMT.pdf"))
 
-    
-    
