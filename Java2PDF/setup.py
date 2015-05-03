@@ -40,7 +40,7 @@ os.system("sudo gem install wkhtmltopdf-binary-edge")
 
 
 setup(name='Java2PDF',
-      version='0.1',
+      version='0.2.0',
       description='Java2PDF',
       url='http://github.com/mhild/Java2PDF',
       author='mhild',

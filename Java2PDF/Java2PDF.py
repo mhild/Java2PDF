@@ -8,7 +8,6 @@ import fnmatch
 import argparse
 import os
 import pdfkit
-from PyPDF2 import PdfFileReader, PdfFileMerger
 import re
 import textwrap
 import time 
@@ -17,93 +16,49 @@ def trim_java2(lines):
 
     return ''.join(lines)
 
-def trim_java(lines):
-    # remove trailing blanks
-    text = ""
-    indentcount = 0
-    inside_comment = False
-    inside_arg = False
-    
-    for line in lines:
-        if '(' in line:
-            inside_arg = True
 
-        if inside_arg:
-            res = re.match(r'(\([\s\S]+\))', line)
-            if res:
-                arg = res.group(1)
-                new_arg = arg.replace(";","##SKINARG##");
-            
-                lines = line.replace(arg,new_arg);
-        
-        if ')' in line:
-            inside_arg = False
-        
-        
-            
-        if "/*" in line:
-            inside_comment = True
-            
-        if "//" in line:
-            res = re.match(r'(//[\s\S]+)', line.strip())
-            if res:
-                arg = res.group(1)
-                wrappedlines = textwrap.wrap(arg, width)
-                new_arg = ''.join( "//" + l + "##COMMENT##" for l in wrappedlines)
-                line = line.strip().replace(arg,new_arg);
-                line = line.replace("////", "//")
-            else:
-                wrappedlines = textwrap.wrap(line.strip(), width)
-                line = ''.join("//" + l + "##COMMENT##" for l in wrappedlines)
-                line = line.replace("////", "//")
-                            
-        if inside_comment:
-            wrappedlines = textwrap.wrap(line, width)
-            line = ''.join(l + "##COMMENT##" for l in wrappedlines)
+def initialize_html():
+    # ##################
+    # initialize html
+    # ##################
+    html = []
+    html.append("<meta http-equiv='Content-Type' content='text/html; charset=utf-8' />")
+    # reference google-code-prettifier
+    html.append("<script src='https://cdn.rawgit.com/google/code-prettify/master/loader/run_prettify.js'></script>")
+    # set word wrap
+    html.append("<head><style>.pb { page-break-before: always;word-wrap:break-word;}</style></head>")
+    html.append("<body>")
+    
+    return html
 
-            
-        text=text+line.strip()
+
+def finalize_html():
+    return "</body>"
+
+
+def parse_student_folder(source_folder, folder):
+    print("Parsing folder '"+folder+"'")  
+    
+    student_html = []
+    student_html.append("<div class='pb'><h3>Student/Ordner: <b>"+folder+"</b></h3>")
+    
+    # get folder items 
+    items = os.walk(source_folder+"/"+folder)
+    
+    for i in items:
+        for jf in fnmatch.filter(i[2], "*.java"):
+            student_html.append("<h4>"+i[0]+"/"+jf+"</h4><p><pre class='prettyprint lang-java'>")
+            with open(i[0]+"/"+jf,"r") as f:
+                lines = f.readlines()
+                student_html.append(''.join(lines)+"</pre></p>")
+                                    
+            f.close()
         
-        if "*/" in line:
-            inside_comment = False    
+    student_html.append("</div>")
     
-
-            
-   
-    # remove newlines
-    text = text.replace("\n", "")
-    text = text.replace("\r", "")
+    return student_html
     
-    text = text.replace("public", "\npublic")
-    text = text.replace("private", "\nprivate")
     
-    # insert newlines after ';' & comments
-    text = text.replace(";", ";\n")
-    
-    # replace placeholders
-    text = text.replace("##COMMENT##", "\n")
-    text = text.replace("##SKINARG##", ";")
-    # insert indents 
-    out = ""
-    indent = ""
-    for char in text:
-        if char =='{':
-            indentcount = indentcount + 1
-            indent = indent + " "
-            out = out + char + "\n" + indent
-        elif char == '}':
-            indentcount = indentcount - 1
-            indent = indent[:-1]
-            out = out + char + "\n" + indent
-        elif char == "\n":
-            out = out + char + indent
-        else:
-            out = out + char
-
-        
-    return out
-    
-
 options = {
     'quiet': '',
     'javascript-delay': '5000',
@@ -111,64 +66,46 @@ options = {
 
 cmd_line_parser = argparse.ArgumentParser()
 cmd_line_parser.add_argument("source", help="Klausurordner: Pfad zu den Studentenordnern")
-cmd_line_parser.add_argument("-d", "--destinationfolder", help="Ziel-Ordner fuer die PDFs")
-#cmd_line_parser.add_argument("-w", "--width", help="max. Zeichenbreite fuer Kommentare (default: 80 Zeichen)")
-cmd_line_parser.add_argument("-p", "--prefix", help="Prefix, dass jedem PDF vorangestellt wird")
-#cmd_line_parser.add_argument("-f", "--force", action='store_true', help="Einzelne Studenten-PDFs werden neu erstellt", )
+cmd_line_parser.add_argument("-d", "--destinationfolder", help="Ziel-Ordner das PDF")
+cmd_line_parser.add_argument("-o", "--outfile", help="Name des PDFs")
+cmd_line_parser.add_argument("-v", "--verbose", action="store_true")
+
 args = cmd_line_parser.parse_args()
 
 source_folder = args.source.strip("/")
+prefix = source_folder.split("/")[-1]+"_"
 
 if args.destinationfolder:
     destination_folder =  args.destinationfolder
 else:
-    destination_folder = source_folder.strip("/")
-# if args.width:
-#     width = int(args.width)
-# else:
-#     width=80
+    destination_folder = "."
 
-if args.prefix:
-    prefix = args.prefix
+if args.outfile:
+    outfile = args.outfile
+    if not outfile.endswith(".pdf"):
+        outfile=outfile+".pdf"
 else:
-    prefix = source_folder.split("/")[-1]+"_"
+    outfile = destination_folder+"/"+prefix+"GESAMT.pdf"
     
-
 if not os.path.exists(source_folder):
-    print("source folder existiert nicht")
+    print("source folder '"+source_folder+"' existiert nicht")
     exit
 
+
+# get student-subfolders
 student_folders = next(os.walk(source_folder))[1]
-outfile = destination_folder+"/"+prefix+"GESAMT.pdf"
-html="<meta http-equiv='Content-Type' content='text/html; charset=utf-8' /><script src='https://cdn.rawgit.com/google/code-prettify/master/loader/run_prettify.js'></script>"
-html = html + "<head><style>.pb { page-break-before: always;word-wrap:break-word;}</style></head>"
 
+html = initialize_html()
 
-html = html + "<body>"
-pdf_list = []
 for folder in student_folders:
-
-        # umlaute
+    html.extend(parse_student_folder(source_folder, folder))
     
-    print("Parsing folder '"+folder+"'")  
-    html=html+"<div class='pb'><h3>Student/Ordner: <b>"+folder+"</b></h3>"  
-    items = os.walk(source_folder+"/"+folder)
-    for i in items:
-        for jf in fnmatch.filter(i[2], "*.java"):
-            html=html+"<h4>"+i[0]+"/"+jf+"</h4><p><pre class='prettyprint lang-java'>"
-            with open(i[0]+"/"+jf,"r") as f:
-                lines = f.readlines()
-                html=html+trim_java2(lines)+"</pre></p>"
-            f.close()
-        
-#        pdfkit.from_string(html.strip().decode('utf-8'), outfile, options=options)
-#    else:
-#        print("Student/Ordner: "+folder+" => skipped")
-    html = html + "</div>"
-html = html + "</body>"
+html.append(finalize_html())
+
+html_string = ''.join(html)
 
 print("Building PDF: " + outfile )
-pdfkit.from_string(html.strip().decode('utf-8'), outfile, options=options)       
+pdfkit.from_string(html_string.strip().decode('utf-8'), outfile, options=options)       
 
 
 
