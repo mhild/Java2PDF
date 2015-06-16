@@ -12,6 +12,8 @@ import re
 import textwrap
 import time 
 
+from xml.sax.saxutils import escape
+
 def trim_java2(lines):
 
     return ''.join(lines)
@@ -35,6 +37,10 @@ def initialize_html():
 def finalize_html():
     return "</body>"
 
+def escape_code(code_string):
+    
+    return escape(code_string)
+
 
 def parse_student_folder(source_folder, folder):
     print("Parsing folder '"+folder+"'")  
@@ -48,9 +54,11 @@ def parse_student_folder(source_folder, folder):
     for i in items:
         for jf in fnmatch.filter(i[2], "*.java"):
             student_html.append("<h4>"+i[0]+"/"+jf+"</h4><p><pre class='prettyprint lang-java'>")
+            #student_html.append("<![CDATA[")
             with open(i[0]+"/"+jf,"r") as f:
                 lines = f.readlines()
-                student_html.append(''.join(lines)+"</pre></p>")
+                # escape_code method before pretty-print rendering ("<a" -> "< a") 
+                student_html.append(escape_code(''.join(lines))+"</pre></p>")
                                     
             f.close()
         
@@ -69,6 +77,7 @@ cmd_line_parser.add_argument("source", help="Klausurordner: Pfad zu den Studente
 cmd_line_parser.add_argument("-d", "--destinationfolder", help="Ziel-Ordner das PDF")
 cmd_line_parser.add_argument("-o", "--outfile", help="Name des PDFs")
 cmd_line_parser.add_argument("-v", "--verbose", action="store_true")
+cmd_line_parser.add_argument("-D", "--debug", action="store_true")
 
 args = cmd_line_parser.parse_args()
 
@@ -79,6 +88,11 @@ if args.destinationfolder:
     destination_folder =  args.destinationfolder
 else:
     destination_folder = "."
+
+if args.debug:
+    debug = True
+else:
+    debug = False
 
 if args.outfile:
     outfile = args.outfile
@@ -103,6 +117,10 @@ for folder in student_folders:
 html.append(finalize_html())
 
 html_string = ''.join(html)
+
+if debug:
+    print("<!-- " +folder + "-->")
+    print(html_string+"\n\n")
 
 print("Building PDF: " + outfile )
 pdfkit.from_string(html_string.strip().decode('utf-8'), outfile, options=options)       
